@@ -1,23 +1,26 @@
 <?php
 
-$id = '1';
+require __DIR__.'/../lib/functions.php';
 
-$question = 'やっちんの生まれた年は';
+$id = '4';
+
+$data = fetchById($id);
+
+
+$question = nl2br($data[1]);
 
 
 $answers = [
-  'A' => '2000年',
-  'B' => '1958年',
-  'C' => '1598年',
-  'D' => '紀元前3000年',
+  'A' => $data[2],
+  'B' => $data[3],
+  'C' => $data[4],
+  'D' => $data[5],
 ];
 
 
 
-$correctAnswer = 'B';
+$correctAnswer = strtoupper($data[6]);
 $correctAnswerValue = $answers[$correctAnswer];
-$explanation ='昭和33年に生まれました、この年は戌年です。<br />
-今思えば終戦記念日1945年8月14日から13年しか経っていませんね。<br />
-多くの人の夢や希望を奪った戦争を決して忘れないように生きていきたい。';
+$explanation = nl2br($data[7]);
 
 include __DIR__.'/../template/question.tpl.php';
