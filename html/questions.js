@@ -1,50 +1,92 @@
-"use strict ";
+// 解答の選択肢一覧を取得
+const answersList = document.querySelectorAll('ol.answers li');
+// クリックされたときの処理を仕込む
+answersList.forEach(li => li.addEventListener('click', checkClickedAnswer));
 
-const answersList = document.querySelectorAll("ol.answers li");
-
-answersList.forEach((li) => li.addEventListener("click", checkClickedAnswer));
-
-// 正しい答え
-const correctAnswers = {
-  question1: 'B',
-  question2: 'C',
-  question3: 'C',
-  question4: 'B',
-};
-
+/**
+ * クイズの解答をクリックしたときの処理
+ *
+ * @param {Event} event
+ */
 function checkClickedAnswer(event) {
-  //  クリックされた要素のliタグ
-  const clickedAnswerElement = event.currentTarget;
-  // 選択した答え(A, B, C, D)
-  const selectedAnswer = clickedAnswerElement.dataset.answer;
+    // addEventListenerによってイベント検知した対象を取得(この実装ではli要素)
+    const clickedAnswerElement = event.currentTarget;
+    // 選択した答え(A,B,C,D)
+    const selectedAnswer = clickedAnswerElement.dataset.answer;
+    // 親要素のolから、data-idの値を取得
+    const questionId = clickedAnswerElement.closest('ol.answers').dataset.id;
 
-  const questionId = clickedAnswerElement.closest('ol.answers').dataset.id;
-  // 正しい答え(A, B, C, D)
-  const correctAnswer = correctAnswers[questionId];
-  console.log(selectedAnswer)
-  console.log(correctAnswer)
-  console.log(questionId)
+    // 送信するデータを作成
+    const formData = new FormData();
+    formData.append('id', questionId);
+    formData.append('selectedAnswer', selectedAnswer);
 
-  // メッセージを入れる変数を用意
-  let message;
-  // カラーコードを入れる変数を用意
-  let answerColorCode;
+    // リクエスト
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'answer.php');
+    xhr.send(formData);
+    
+    // 読み込みが終わったときのイベントを追加
+    xhr.addEventListener('loadend', function(event) {
+        // addEventListenerによってイベント検知した対象を取得(この実装ではXMLHttpRequest)
+        /** @type {XMLHttpRequest} */
+        const xhr = event.currentTarget;
 
-  // 答えが正しいか判定
-  if (selectedAnswer === correctAnswer) {
-    //正しい答えだった時
-    message = "正解です！おめでとうなんにもでんけど";
-    answerColorCode = "";
-  } else {
-    // 間違った答えだった時
-    message = "ざんねん、間違っちゃったね(^.^)";
-    answerColorCode = "#f05959";
-  }
+        // リクエストが成功したかステータスコードで確認(200は成功)
+        if (xhr.status === 200) {
+            // リクエストが成功したとき
 
-  alert(message);
-  // 表示色を変更(間違った時だけ色が変わる)
-  document.querySelector("span#correct-answer").style.color = answerColorCode;
-  // 答え全体を表示
-  document.querySelector("div#section-correct-answer").style.display = "block";
+            // レスポンスの値をJavaScriptで利用できるように準備
+            const response = JSON.parse(xhr.response);
+
+            // レスポンスの値をわかりやすい変数に代入
+            const result = response.result;
+            const correctAnswer = response.correctAnswer;
+            const correctAnswerValue = response.correctAnswerValue;
+            const explanation = response.explanation;
+
+            // 表示処理
+            displayResult(result, correctAnswer, correctAnswerValue, explanation);
+        } else {
+            alert('Error: 解答データの取得に失敗しました');
+        }
+    });
 }
 
+/**
+ * 結果の表示
+ *
+ * @param {string} result
+ * @param {string} correctAnswer
+ * @param {string} correctAnswerValue
+ * @param {string} explanation
+ */
+function displayResult(result, correctAnswer, correctAnswerValue, explanation) {
+    // メッセージを入れる変数を用意
+    let message;
+    // カラーコードを入れる変数を用意
+    let answerColorCode;
+
+    // 答えが正しいか判定
+    if (result) {
+        // 正しい答えだったとき
+        message = '正解です！おめでとう！';
+        answerColorCode = '';
+    } else {
+        // 間違えた答えだったとき
+        message = 'ざんねん！不正解です！';
+        answerColorCode = '#f05959';
+    }
+
+    // アラートで正解・不正解を出力
+    alert(message);
+
+    // 正解の内容をHTMLに埋め込む
+    document.querySelector('span#correct-answer').innerHTML = correctAnswer + '. ' + correctAnswerValue;
+    document.querySelector('span#explanation').innerHTML = explanation;
+
+    // 色を変更(間違っていたときだけ色が変わる)
+    document.querySelector('span#correct-answer').style.color = answerColorCode;
+    // 答え全体を表示
+    document.querySelector('div#section-correct-answer').style.display = 'block';
+}

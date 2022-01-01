@@ -1,27 +1,29 @@
 <?php
 
-require __DIR__.'/../lib/functions.php';
+// 自作した関数を読み込み
+require_once __DIR__.'/../lib/functions.php';
 
-$id = escape($_GET['id'] ?? '');
+// 入力値を変数に入れる
+$id = $_GET['id'] ?? '';
 
+// クイズの問題情報を取得
 $data = fetchById($id);
 
-if (!$data) {
-  // HTTPレスポンスのヘッダを404にする
-  header('HTTP/1.1 404 Not Found');
-
-  // レスポンスの種類を指定する
-  header('Content-Type: text/html; charset=UTF-8');
-  include __DIR__.'/../template/404.tpl.php';
-  exit(0);
+// データが正しい状態か確認する
+if (empty($data)) {
+    // エラーのときの出力
+    error404();
 }
 
+// データを操作しやすい形に作り変える
 $formattedData = generateFormattedData($data);
 
-$question = $formattedData['question'];
-$answers = $formattedData['answers'];
-$correctAnswer = $formattedData['correctAnswer'];
-$correctAnswerValue = $answers[$correctAnswer];
-$explanation = $formattedData['explanation'];
+// HTML内に埋め込む情報を変数にまとめる
+$assignData = [
+    'id' => escape($id),
+    'question' => $formattedData['question'],
+    'answers' => $formattedData['answers'],
+];
 
-include __DIR__.'/../template/question.tpl.php';
+// 出力
+loadTemplate('question', $assignData);

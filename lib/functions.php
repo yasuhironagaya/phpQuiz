@@ -1,25 +1,123 @@
 <?php
 
-function fetchById($id) {
-  // ファイルを開く
-    $handler = fopen(__DIR__.'/data.csv', 'r');
+/**
+ * テンプレートを読み込み
+ *
+ * @param string $filename ファイル名
+ * @param array $assignData 出力したい値の配列
+ *
+ * @return void
+ */
+function loadTemplate($filename, array $assignData = [])
+{
+    // 出力したい値が渡されている場合のみ
+    if ($assignData) {
+        // 配列のキーの変数名を用意して、変数の中には配列を値を設定する
+        // 例: extract(['apple' => 'りんご']); // $apple = 'りんご'; の意味になる
+        extract($assignData);
+    }
 
-  // データを取得
-    $question = [];
-    while($row = fgetcsv($handler)){
-      if (isDataRow($row)){
+    // テンプレートのファイルを読み込む
+    include __DIR__ . '/../template/'.$filename.'.tpl.php';
+}
+
+/**
+ * 404のテンプレートを出力して、終了する
+ *
+ * @return void
+ */
+function error404()
+{
+    // HTTPレスポンスのヘッダを404にする
+    header('HTTP/1.1 404 Not Found');
+
+    // レスポンスの種類を指定する
+    header('Content-Type: text/html; charset=UTF-8');
+
+    // 404ページを出力
+    loadTemplate('404');
+
+    // PHPスクリプトを終了(0は正常に終了)
+    exit(0);
+}
+
+/**
+ * 404のJsonを出力して、終了する
+ *
+ * @param mixed $response 出力したいデータ
+ *
+ * @return void
+ */
+function error404Json($response)
+{
+    // HTTPレスポンスのヘッダを404にする
+    header('HTTP/1.1 404 Not Found');
+
+    // レスポンスの種類を指定する
+    header('Content-Type: application/json; charset=UTF-8');
+
+    // jsonを出力
+    echo json_encode($response);
+
+    // PHPスクリプトを終了(0は正常に終了)
+    exit(0);
+}
+
+/**
+ * クイズのすべての問題を取得
+ *
+ * @return array すべての問題の配列
+ */
+function fetchAll()
+{
+    // クイズの問題の情報一覧をを保存する入れ物を用意
+    $questions = [];
+
+    // ファイル操作の準備をする(r: 読み込み専用)
+    $handle = fopen(__DIR__.'/data.csv', 'r');
+
+    // ファイルが操作できるか判定
+    if ($handle === false) {
+        // 操作できないときは空を返す
+        return $questions;
+    }
+
+    // ファイルの中身を1行ずつ取得する
+    while ($row = fgetcsv($handle)) {
+        // クイズの問題データ以外は無視する
+        if (isDataRow($row)) {
+            // クイズの問題だけを配列に追加する
+            $questions[] = $row;
+        }
+    }
+
+    // ファイルの操作を終了する
+    fclose($handle);
+
+    // 取得できた値を返す
+    return $questions;
+}
+
+/**
+ * 指定されたIDのクイズの問題を取得
+ *
+ * @param string $id クイズのID
+ *
+ * @return array クイズの問題
+ */
+function fetchById($id)
+{
+    // (毎回全部のデータを取得するのでベストな実装ではない)
+    foreach (fetchAll() as $row) {
+        // 指定されたIDと一致するか確認
         if ($row[0] === $id) {
-          $question = $row;
-          break;
-      }
-      }
-    };
+            // 一致した行を返す
+            return $row;
+        }
+    }
 
-  // ファイルを閉じる
-    fclose($handler);
-
-  // データを返す
-  return $question;
+    // IDがヒットしなかったら空を返す
+    return [];
 }
 
 /**
